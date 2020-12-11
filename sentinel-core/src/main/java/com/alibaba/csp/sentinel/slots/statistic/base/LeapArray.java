@@ -43,6 +43,7 @@ public abstract class LeapArray<T> {
     protected int windowLengthInMs;
     protected int sampleCount;
     protected int intervalInMs;
+    private double intervalInSecond;
 
     protected final AtomicReferenceArray<WindowWrap<T>> array;
 
@@ -64,6 +65,7 @@ public abstract class LeapArray<T> {
 
         this.windowLengthInMs = intervalInMs / sampleCount;
         this.intervalInMs = intervalInMs;
+        this.intervalInSecond = intervalInMs / 1000.0;
         this.sampleCount = sampleCount;
 
         this.array = new AtomicReferenceArray<>(sampleCount);
@@ -209,8 +211,7 @@ public abstract class LeapArray<T> {
         if (timeMillis < 0) {
             return null;
         }
-        long timeId = (timeMillis - windowLengthInMs) / windowLengthInMs;
-        int idx = (int)(timeId % array.length());
+        int idx = calculateTimeIdx(timeMillis - windowLengthInMs);
         timeMillis = timeMillis - windowLengthInMs;
         WindowWrap<T> wrap = array.get(idx);
 
@@ -394,7 +395,7 @@ public abstract class LeapArray<T> {
      * @return interval in second
      */
     public double getIntervalInSecond() {
-        return intervalInMs / 1000.0;
+        return intervalInSecond;
     }
 
     public void debug(long time) {

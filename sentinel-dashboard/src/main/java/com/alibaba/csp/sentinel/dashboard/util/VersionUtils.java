@@ -32,34 +32,59 @@ public final class VersionUtils {
     /**
      * Parse version of Sentinel from raw string.
      *
-     * @param s version string
+     * @param verStr version string
      * @return parsed {@link SentinelVersion} if the version is valid; empty if
      * there is something wrong with the format
      */
-    public static Optional<SentinelVersion> parseVersion(String s) {
-        if (StringUtil.isBlank(s)) {
+    public static Optional<SentinelVersion> parseVersion(String verStr) {
+        if (StringUtil.isBlank(verStr)) {
             return Optional.empty();
         }
         try {
+            String versionFull = verStr;
             SentinelVersion version = new SentinelVersion();
-            String[] postArr = s.split("-");
-            if (postArr.length > 1) {
-                version.setPostfix(postArr[1]);
-            }
-            String[] arr = postArr[0].split("\\.");
-            if (arr.length == 2) {
-                version.setMajorVersion(Integer.valueOf(arr[0]))
-                    .setMinorVersion(Integer.valueOf(arr[1]))
-                    .setFixVersion(0);
-            } else if (arr.length == 3) {
-                version.setMajorVersion(Integer.valueOf(arr[0]))
-                    .setMinorVersion(Integer.valueOf(arr[1]))
-                    .setFixVersion(Integer.valueOf(arr[2]));
-            } else {
-                // Wrong format, return empty.
+            
+            // postfix
+            int index = versionFull.indexOf("-");
+            if (index == 0) {
+                // Start with "-"
                 return Optional.empty();
             }
-            return Optional.of(version);
+            if (index == versionFull.length() - 1) {
+                // End with "-"
+            } else if (index > 0) {
+                version.setPostfix(versionFull.substring(index + 1));
+            }
+            
+            if (index >= 0) {
+                versionFull = versionFull.substring(0, index);
+            }
+            
+            // x.x.x
+            int segment = 0;
+            int[] ver = new int[3];
+            while (segment < ver.length) {
+                index = versionFull.indexOf('.');
+                if (index < 0) {
+                    if (versionFull.length() > 0) {
+                        ver[segment] = Integer.valueOf(versionFull);
+                    }
+                    break;
+                }
+                ver[segment] = Integer.valueOf(versionFull.substring(0, index));
+                versionFull = versionFull.substring(index + 1);
+                segment ++;
+            }
+            
+            if (ver[0] < 1) {
+                // Wrong format, return empty.
+                return Optional.empty();
+            } else {
+                return Optional.of(version
+                        .setMajorVersion(ver[0])
+                        .setMinorVersion(ver[1])
+                        .setFixVersion(ver[2]));
+            }
         } catch (Exception ex) {
             // Parse fail, return empty.
             return Optional.empty();
